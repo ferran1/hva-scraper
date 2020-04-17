@@ -43,7 +43,5 @@ class MailService
             } catch (TransportExceptionInterface $e) {;
                 dd($e);
             }
-
-        dd("Successful");
     }
 }

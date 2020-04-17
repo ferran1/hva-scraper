@@ -9,7 +9,6 @@ use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
-
 /**
  * Class NewsAndNoticesScraper
  * @package App\Scraper
@@ -55,7 +54,7 @@ class NewsScraper implements ScraperInterface
             $element = explode("|", $dateTime);
             $dateTime = $element[0];
 
-            $propertyDate = $this->getDateFromString($dateTime);
+            $propertyDate = $this->convertStringToDateTime($dateTime);
 
             $currentDate = date('Y-m-d H:i:s');
             $currentDate = new \DateTime($currentDate);
@@ -76,6 +75,7 @@ class NewsScraper implements ScraperInterface
         foreach ($properties as $property) {
             $this->mailService->sendMail(['HvA news: ' . $property['heading'],
                 $property['introParagraph'] . " " . $property['detailUrl']]);
+            sleep(5000);
         }
 
         return true;
@@ -99,7 +99,7 @@ class NewsScraper implements ScraperInterface
         return $crawler->filter('small')->text();
     }
 
-    private function getDateFromString($date): \DateTime
+    private function convertStringToDateTime($date): \DateTime
     {
         $stringPieces = explode(" ", $date);
 

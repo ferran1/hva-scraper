@@ -43,7 +43,7 @@ class ScrapeNewsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $this->logger->info("Started scraping hva news");
+        $this->logger->info("Started scraping HvA news");
 
         $this->scraper->scrape(self::URL);
 
