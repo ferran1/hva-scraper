@@ -2,6 +2,7 @@
 
 namespace App\Scraper;
 
+use App\Exception\NewsScrapeException;
 use App\Interfaces\ScraperInterface;
 use App\Service\MailService;
 use Psr\Log\LoggerInterface;
@@ -44,9 +45,17 @@ class NewsScraper implements ScraperInterface
 
         $properties = $crawler->filter('.media-body')->each(function (Crawler $property, $i) {
 
-            $heading = $property->filter('.media-heading')->text();
+            $heading = $property->filter('.media-heading');
+
+            if (!$this->elementExists($heading)) {
+                throw new NewsScrapeException("Couldn't find the heading of the element. 
+        Check if .media-heading class still exists.");
+            }
+
+            $heading = $heading->text();
 
             $detailUrl = $property->filter('a')->attr('href');
+
             $detailUrl = "https://hva.nl" . $detailUrl;
             $introParagraph = $this->getIntroFromDetailsPage($detailUrl);
 
@@ -59,7 +68,7 @@ class NewsScraper implements ScraperInterface
             $currentDate = date('Y-m-d H:i:s');
             $currentDate = new \DateTime($currentDate);
 
-            // Calc the difference in hours between element datetime and current datetime
+            // Calc the difference in hours between property datetime and current datetime
             $interval = $propertyDate->diff($currentDate);
             $difference_in_hours = ($interval->days * 24) + $interval->h;
 
@@ -72,6 +81,10 @@ class NewsScraper implements ScraperInterface
             }
         });
 
+        if (!$properties) {
+            dd("No new articles were posted in the last 24 hours.");
+        }
+
         foreach ($properties as $property) {
             $this->mailService->sendMail(['HvA news: ' . $property['heading'],
                 $property['introParagraph'] . " " . $property['detailUrl']]);
@@ -81,13 +94,29 @@ class NewsScraper implements ScraperInterface
         return true;
     }
 
+    // Check if element exists
+    private function elementExists(Crawler $element): bool
+    {
+        if ($element->count() > 0) {
+            return true;
+        }
+        return false;
+    }
+
     private function getIntroFromDetailsPage($detailUrl): string
     {
         $client = HttpClient::create();
         $htmlDetail = $client->request('GET', $detailUrl)->getContent();
         $crawler = new Crawler($htmlDetail);
 
-        return $crawler->filter('.lead')->text();
+        $intro = $crawler->filter('.lead');
+
+        if (!$this->elementExists($intro)) {
+            throw new NewsScrapeException("Couldn't find the news article introduction from the details page. 
+        Check if .lead class still exists.");
+        }
+
+        return $intro->text();
     }
 
     private function getDateTimeFromDetailsPage($detailUrl): string
@@ -96,7 +125,14 @@ class NewsScraper implements ScraperInterface
         $htmlDetail = $client->request('GET', $detailUrl)->getContent();
         $crawler = new Crawler($htmlDetail);
 
-        return $crawler->filter('small')->text();
+        $dateTime = $crawler->filter('small');
+
+        if (!$this->elementExists($dateTime)) {
+            throw new NewsScrapeException("Couldn't find the date and time from the details page. 
+        Check if the small HTML element still exists.");
+        }
+
+        return $dateTime->text();
     }
 
     private function convertStringToDateTime($date): \DateTime
