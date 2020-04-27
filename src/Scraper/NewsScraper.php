@@ -2,9 +2,10 @@
 
 namespace App\Scraper;
 
-use App\Exception\NewsScrapeException;
+use App\Exception\ScrapeException;
 use App\Interfaces\ScraperInterface;
 use App\Service\MailService;
+use Exception;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\HttpClient;
@@ -43,12 +44,12 @@ class NewsScraper implements ScraperInterface
         $html = $response->getContent();
         $crawler = new Crawler($html);
 
-        $properties = $crawler->filter('.media-body')->each(function (Crawler $property, $i) {
+        $properties = $crawler->filter('.media-body')->each(function (Crawler $property) {
 
             $heading = $property->filter('.media-heading');
 
             if (!$this->elementExists($heading)) {
-                throw new NewsScrapeException("Couldn't find the heading of the element. 
+                throw new ScrapeException("Couldn't find the heading of the element. 
         Check if .media-heading class still exists.");
             }
 
@@ -112,7 +113,7 @@ class NewsScraper implements ScraperInterface
         $intro = $crawler->filter('.lead');
 
         if (!$this->elementExists($intro)) {
-            throw new NewsScrapeException("Couldn't find the news article introduction from the details page. 
+            throw new ScrapeException("Couldn't find the news article introduction from the details page. 
         Check if .lead class still exists.");
         }
 
@@ -128,7 +129,7 @@ class NewsScraper implements ScraperInterface
         $dateTime = $crawler->filter('small');
 
         if (!$this->elementExists($dateTime)) {
-            throw new NewsScrapeException("Couldn't find the date and time from the details page. 
+            throw new ScrapeException("Couldn't find the date and time from the details page. 
         Check if the small HTML element still exists.");
         }
 
@@ -142,14 +143,18 @@ class NewsScraper implements ScraperInterface
         $day = $stringPieces[0];
         $month = $stringPieces[1];
 
-        $month = $this->getMonthAsNumber($month);
+        try {
+            $month = $this->getMonthAsNumber($month);
+        } catch (Exception $e) {
+            echo $e;
+        }
 
         $year = $stringPieces[2];
         $time = $stringPieces[3];
 
         try {
             $date = new \DateTime($year . "/" . $month . "/" . $day . $time);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             echo $e;
         }
 
@@ -183,6 +188,8 @@ class NewsScraper implements ScraperInterface
                 return 11;
             case "dec":
                 return 12;
+            default:
+                throw new Exception("Invalid month");
         }
     }
 }

@@ -40,7 +40,7 @@ class MailService
             $mailer = new Mailer($transport);
             try {
                 $mailer->send($email);
-            } catch (TransportExceptionInterface $e) {;
+            } catch (TransportExceptionInterface $e) {
                 dd($e);
             }
     }

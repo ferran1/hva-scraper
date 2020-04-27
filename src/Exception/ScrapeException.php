@@ -2,7 +2,7 @@
 
 namespace App\Exception;
 
-class NewsScrapeException extends \Exception
+class ScrapeException extends \Exception
 {
 
     public function setLine(int $lineNumber) {
